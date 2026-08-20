@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8726 | Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background:#000; color:#c0c0c0; font-family:'Montserrat',sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; box-sizing:border-box; }
+        .container { border:4px solid #04003b; padding:30px 20px; background:rgba(4,0,59,0.15); text-align:center; width:100%; max-width:400px; border-radius:10px; }
+        h1 { font-size: 1.8rem; margin-top: 0; color: #ffffff; font-weight: 700; }
+        .price-tag { color:#9e9d9d; margin-bottom:25px; font-size: 1.1rem; font-weight: 700; }
+        input { background:#111; border:2px solid #9e9d9d; color:#fff; padding:15px; width:100%; box-sizing:border-box; margin-bottom:20px; text-align:center; font-size: 1rem; border-radius: 5px; font-family: inherit; }
+        button { background:#04003b; color:white; border:2px solid #9e9d9d; padding:15px; width:100%; font-weight:bold; cursor:pointer; font-size: 1.1rem; border-radius: 5px; text-transform:uppercase; transition: 0.3s; font-family: inherit; }
+        button:active { background: #0b3562; transform: scale(0.98); }
+
+        .how-to-play { margin-top: 35px; text-align: left; border-top: 1px solid #333; padding-top: 20px; }
+        .how-to-play h2 { font-size: 0.9rem; color: #9e9d9d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; text-align: center; }
+        .step { margin-bottom: 15px; font-size: 0.85rem; line-height: 1.4; display: flex; align-items: flex-start; }
+        .step-num { background: #04003b; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; margin-right: 12px; flex-shrink: 0; border: 1px solid #9e9d9d; }
+        .step-text b { color: #ffffff; display: block; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CRYPTOHAWKS 8726</h1>
+        <div class="price-tag">MARKET RATE:<br>1 HB = {{ "%.2f"|format(price) }} Talons</div>
+
+        <form action="/claim" method="post">
+            <input type="number" name="team_num" placeholder="ENTER YOUR TEAM #" min="1" max="11000" step="1" required>
+            <button type="submit">INVEST 100 TALONS</button>
+        </form>
+
+        <div class="how-to-play">
+            <h2>Exchange Protocol</h2>
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text"><b>Capital Allocation</b> Each participant receives a one-time grant of 100 Talons to invest in the 8726 Market.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text"><b>Market Volatility</b> The price of HawkBits (HB) fluctuates based on Team 8726's live performance. High RP matches increase value.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text"><b>Net Worth Strategy</b> Buy HB when the price is low. Your ranking is determined by your total value (HB Owned × Current Price).</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

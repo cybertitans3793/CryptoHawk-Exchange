@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="300">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8726 | Rankings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { background:#000; color:white; font-family:'Montserrat',sans-serif; padding:15px; margin:0; }
+        .card { background:#04003b; padding:20px; border-radius:8px; margin-bottom:20px; border:2px solid #9e9d9d; text-align: center; }
+        .live-price { font-size: 1.5rem; color: #ffffff; }
+        .sub-text { color: #9e9d9d; font-size: 0.9rem; margin-top: 5px; text-transform: uppercase; }
+        table { width:100%; border-collapse:collapse; background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; }
+        th { background: #04003b; color: #9e9d9d; padding: 15px 10px; font-size: 0.9rem; text-align: center; }
+        td { padding:15px 10px; border-bottom:1px solid #222; text-align:center; font-size: 1rem; }
+        .val-col { color: #c0c0c0; font-weight: bold; }
+        .hb-col { color: #9e9d9d; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="live-price">1 HB = {{ "%.2f"|format(price) }} Talons</div>
+        <div class="sub-text">Live Market Value</div>
+    </div>
+    <table>
+        <thead><tr><th>#</th><th>TEAM</th><th>HAWKBITS</th><th>TALONS</th></tr></thead>
+        <tbody>
+            {% for row in wallets %}
+            <tr>
+                <td style="color:#9e9d9d; font-size:0.85rem;">{{ loop.index }}</td>
+                <td>{{ row[0] }}</td>
+                <td class="hb-col">{{ "%.2f"|format(row[1]) }}</td>
+                <td class="val-col">{{ "%.2f"|format(row[1] * price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta http-equiv="refresh" content="300"><title>8726 | Pit Display</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { background:#000; color:white; font-family:'Montserrat',sans-serif; margin:0; overflow:hidden; display:flex; flex-direction:column; height:100vh; }
+        .header { background:#04003b; padding:15px 30px; border-bottom:5px solid #9e9d9d; display:flex; justify-content:space-between; align-items:center; }
+        .header h1 { margin: 0; font-size: 2.2rem; }
+        .main { display:grid; grid-template-columns:350px 1fr 280px; gap:25px; padding:25px; flex-grow:1; margin-bottom: 60px; }
+        .scroll-box { background:rgba(255,255,255,0.05); border:3px solid #04003b; display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; }
+        .table-header { display: flex; justify-content: space-between; padding: 20px; background: #04003b; border-bottom: 2px solid #9e9d9d; font-weight: bold; font-size: 1.4rem; color: #ffffff; }
+        .crawl-container { flex-grow: 1; position: relative; overflow: hidden; }
+        .crawl { position: absolute; width: 100%; animation: crawl 25s linear infinite; }
+        @keyframes crawl { from { top: 100%; } to { top: -100%; } }
+        .chart-box { background:#050505; border:3px solid #04003b; padding:20px; border-radius: 8px; }
+        .qr-box { background:white; padding:25px; color:black; text-align:center; height:fit-content; border: 5px solid #04003b; border-radius: 12px; }
+        
+        .footer-ticker { position: absolute; bottom: 0; left: 0; width: 100%; background: #0b3562; border-top: 4px solid #9e9d9d; padding: 15px 0; overflow: hidden; white-space: nowrap; }
+        .ticker-text { display: inline-block; padding-left: 100%; animation: ticker 30s linear infinite; font-size: 1.8rem; color: #ffffff; font-weight: bold; }
+        @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>HAWKCHAIN LIVE</h1><h1 id="clock"></h1></div>
+    <div class="main">
+        <div class="scroll-box">
+            <div class="table-header"><span>TEAM</span><span>TALONS</span></div>
+            <div class="crawl-container">
+                <div class="crawl">
+                    <table style="width:100%; border-collapse:collapse;">
+                        {% for row in wallets %}
+                        <tr>
+                            <td style="padding:18px; border-bottom:1px solid #222; font-size:1rem; color:#9e9d9d; width:40px;">#{{ loop.index }}</td>
+                            <td style="padding:18px; border-bottom:1px solid #222; font-size:1.5rem;">{{ row[0] }}</td>
+                            <td style="text-align:right; padding:18px; font-size:1.5rem; color:#9e9d9d;">{{ "%.2f"|format(row[1] * price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="chart-box"><canvas id="priceChart"></canvas></div>
+        <div class="qr-box"><div id="qrcode"></div><p style="margin-top:20px; font-size:1.5rem; font-weight:bold;">SCAN TO INVEST</p></div>
+    </div>
+    
+    <div class="footer-ticker">
+        <div class="ticker-text">
+            FRC 8726 CryptoHawks | Urbana High School | Market Rate: 1 HB = {{ "%.2f"|format(price) }} Talons | Let's Go Hawks!
+        </div>
+    </div>
+
+    <script>
+        new QRCode(document.getElementById("qrcode"), { text: "https://crypto.frc8726.org", width: 230, height: 230, colorDark: "#000000", colorLight: "#ffffff" });
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        new Chart(document.getElementById('priceChart'), {
+            type: 'line',
+            data: { labels: {{ graph_labels|tojson }}, datasets: [{ label: 'Price', data: {{ graph_data|tojson }}, borderColor: '#9e9d9d', fill: true, backgroundColor: 'rgba(4,0,59,0.5)', pointBackgroundColor: '#ffffff', pointRadius: 5 }] },
+            options: { 
+                responsive:true, 
+                maintainAspectRatio:false,
+                plugins: {
+                    title: { display: true, text: 'Market Value: CryptoHawks', color: '#ffffff', font: { size: 32, family: 'Montserrat' }, padding: { bottom: 25 } },
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Match Number', color: '#9e9d9d', font: { size: 18 } }, ticks: { color: '#c0c0c0', font: { size: 16 } }, grid: { color: '#1a1a1a' } },
+                    y: { title: { display: true, text: 'Talon Price', color: '#9e9d9d', font: { size: 18 } }, ticks: { color: '#c0c0c0', font: { size: 16 } }, grid: { color: '#1a1a1a' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
