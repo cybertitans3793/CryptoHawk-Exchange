@@ -10,9 +10,12 @@
         .container { border:4px solid #04003b; padding:30px 20px; background:rgba(4,0,59,0.15); text-align:center; width:100%; max-width:400px; border-radius:10px; }
         h1 { font-size: 1.8rem; margin-top: 0; color: #ffffff; font-weight: 700; }
         .price-tag { color:#9e9d9d; margin-bottom:25px; font-size: 1.1rem; font-weight: 700; }
+        .offline { color:#ff4d4d; font-size:0.8rem; display:block; margin-top:6px; }
+        .error { background:#2a0000; border:2px solid #8b0000; color:#ffb3b3; padding:12px; border-radius:5px; margin-bottom:20px; font-size:0.9rem; line-height:1.4; }
         input { background:#111; border:2px solid #9e9d9d; color:#fff; padding:15px; width:100%; box-sizing:border-box; margin-bottom:20px; text-align:center; font-size: 1rem; border-radius: 5px; font-family: inherit; }
         button { background:#04003b; color:white; border:2px solid #9e9d9d; padding:15px; width:100%; font-weight:bold; cursor:pointer; font-size: 1.1rem; border-radius: 5px; text-transform:uppercase; transition: 0.3s; font-family: inherit; }
         button:active { background: #0b3562; transform: scale(0.98); }
+        .rankings-link { color:#9e9d9d; display:block; margin-top:18px; font-size:0.9rem; text-decoration:none; padding:8px; }
 
         .how-to-play { margin-top: 35px; text-align: left; border-top: 1px solid #333; padding-top: 20px; }
         .how-to-play h2 { font-size: 0.9rem; color: #9e9d9d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; text-align: center; }
@@ -24,26 +27,41 @@
 <body>
     <div class="container">
         <h1>CRYPTOHAWKS 8726</h1>
-        <div class="price-tag">MARKET RATE:<br>1 HB = {{ "%.2f"|format(price) }} Talons</div>
+        <div class="price-tag">MARKET RATE:<br>1 HB = {{ "%.2f"|format(price) }} Talons
+            {% if not online %}<span class="offline">Live data delayed — showing last known price</span>{% endif %}
+        </div>
 
-        <form action="/claim" method="post">
-            <input type="number" name="team_num" placeholder="ENTER YOUR TEAM #" min="1" max="11000" step="1" required>
-            <button type="submit">INVEST 100 TALONS</button>
+        {% if error == "notatevent" %}
+        <div class="error">TRADING HALTED: Team {{ bad_team }} isn't at this event. Enter the team you're here with.</div>
+        {% elif error == "offline" %}
+        <div class="error">The exchange can't reach live match data right now. Try again in a minute.</div>
+        {% elif error == "badteam" %}
+        <div class="error">Enter your team number (digits only).</div>
+        {% endif %}
+
+        <form action="/claim" method="post" onsubmit="this.querySelector('button').disabled=true">
+            <input type="number" name="team_num" placeholder="ENTER YOUR TEAM #" min="1" max="99999" step="1" required>
+            <button type="submit">INVEST {{ invest }} TALONS</button>
         </form>
+        <a href="/tv" class="rankings-link">View Live Rankings →</a>
 
         <div class="how-to-play">
             <h2>Exchange Protocol</h2>
             <div class="step">
                 <div class="step-num">1</div>
-                <div class="step-text"><b>Capital Allocation</b> Each participant receives a one-time grant of 100 Talons to invest in the 8726 Market.</div>
+                <div class="step-text"><b>Get Your Trader ID</b> Enter your team number. You'll be assigned a famous scientist or engineer as your anonymous trader name.</div>
             </div>
             <div class="step">
                 <div class="step-num">2</div>
-                <div class="step-text"><b>Market Volatility</b> The price of HawkBits (HB) fluctuates based on Team 8726's live performance. High RP matches increase value.</div>
+                <div class="step-text"><b>One-Time Investment</b> Your {{ invest }} Talons buy HawkBits (HB) at the current price. Fewer Talons per HB = more HB for you.</div>
             </div>
             <div class="step">
                 <div class="step-num">3</div>
-                <div class="step-text"><b>Net Worth Strategy</b> Buy HB when the price is low. Your ranking is determined by your total value (HB Owned × Current Price).</div>
+                <div class="step-text"><b>Time the Market</b> The HB price moves with Team {{ team_label }}'s ranking points each match. Buy in when the price is low and climb the trader rankings.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text"><b>Team Glory</b> Teams are ranked by their traders' average net worth — bring your whole team.</div>
             </div>
         </div>
     </div>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8726 | {{ me.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #04003b; color: white; font-family: 'Montserrat', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .receipt-card { background: #000; border: 4px solid #9e9d9d; padding: 30px 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.8); text-align: center; width: 100%; max-width: 400px; }
+        .check { font-size: 0.9rem; color: #9e9d9d; letter-spacing: 2px; text-transform: uppercase; }
+        .trader { font-size: 2rem; margin: 8px 0 4px; letter-spacing: 1px; }
+        .team { color: #9e9d9d; font-size: 0.95rem; margin-bottom: 25px; }
+        .data-row { display: flex; justify-content: space-between; margin: 15px 0; border-bottom: 1px solid #333; padding-bottom: 8px; font-size: 1rem; }
+        .label { color: #9e9d9d; text-transform: uppercase; font-size: 0.85rem; }
+        .up { color: #6fdc8c; } .down { color: #ff8080; }
+        .total-box { background: #04003b; margin-top: 25px; padding: 20px; border: 1px solid #9e9d9d; border-radius: 8px; }
+        .total-val { font-size: 1.8rem; display: block; margin-top: 5px; color: #ffffff; }
+        .rank-line { margin-top: 10px; color: #c0c0c0; font-size: 0.9rem; }
+        .btn { display: block; background: #ffffff; color: #04003b; text-decoration: none; padding: 15px; margin-top: 25px; font-weight: bold; text-transform: uppercase; border-radius: 5px; transition: 0.3s; }
+        .btn:active { background: #c0c0c0; }
+        .note { color: #9e9d9d; font-size: 0.8rem; margin-top: 18px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="receipt-card">
+        <div class="check">{% if new %}✓ Investment confirmed — your trader ID{% else %}Your trader ID{% endif %}</div>
+        <div class="trader">{{ me.name }}</div>
+        <div class="team">Team {{ me.team }}</div>
+
+        <div class="data-row">
+            <span class="label">Invested</span>
+            <span>{{ invest }} Talons</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Bought at</span>
+            <span>{{ "%.2f"|format(me.buy_price) }} T / HB</span>
+        </div>
+        <div class="data-row">
+            <span class="label">HawkBits</span>
+            <span>{{ "%.2f"|format(me.hb) }} HB</span>
+        </div>
+        <div class="data-row">
+            <span class="label">Price now</span>
+            {% set change = (price / me.buy_price - 1) * 100 %}
+            <span>{{ "%.2f"|format(price) }} <span class="{{ 'up' if change >= 0 else 'down' }}">({{ "%+.0f"|format(change) }}%)</span></span>
+        </div>
+
+        <div class="total-box">
+            <span class="label">Net Worth (Talons)</span>
+            <span class="total-val">{{ "%.2f"|format(me.value) }}</span>
+            <div class="rank-line">Trader rank #{{ me.rank }} of {{ people_count }}<br>
+                Team {{ me.team }}: #{{ my_team.rank }} of {{ team_count }} teams ({{ my_team.members }} trader{{ 's' if my_team.members != 1 }})</div>
+        </div>
+
+        <a href="/tv" class="btn">View Live Rankings</a>
+        <div class="note">Your trader ID is saved on this device. Check back after each match to watch your net worth move.</div>
+    </div>
+</body>
+</html>

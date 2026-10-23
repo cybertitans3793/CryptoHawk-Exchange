@@ -1,23 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta http-equiv="refresh" content="300"><title>8726 | Pit Display</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8"><meta http-equiv="refresh" content="120"><title>8726 | Pit Display</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <style>
         body { background:#000; color:white; font-family:'Montserrat',sans-serif; margin:0; overflow:hidden; display:flex; flex-direction:column; height:100vh; }
         .header { background:#04003b; padding:15px 30px; border-bottom:5px solid #9e9d9d; display:flex; justify-content:space-between; align-items:center; }
         .header h1 { margin: 0; font-size: 2.2rem; }
-        .main { display:grid; grid-template-columns:350px 1fr 280px; gap:25px; padding:25px; flex-grow:1; margin-bottom: 60px; }
+        .main { display:grid; grid-template-columns:380px 1fr 300px; gap:25px; padding:25px; flex-grow:1; margin-bottom: 60px; min-height:0; }
         .scroll-box { background:rgba(255,255,255,0.05); border:3px solid #04003b; display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; }
         .table-header { display: flex; justify-content: space-between; padding: 20px; background: #04003b; border-bottom: 2px solid #9e9d9d; font-weight: bold; font-size: 1.4rem; color: #ffffff; }
         .crawl-container { flex-grow: 1; position: relative; overflow: hidden; }
         .crawl { position: absolute; width: 100%; animation: crawl 25s linear infinite; }
         @keyframes crawl { from { top: 100%; } to { top: -100%; } }
-        .chart-box { background:#050505; border:3px solid #04003b; padding:20px; border-radius: 8px; }
-        .qr-box { background:white; padding:25px; color:black; text-align:center; height:fit-content; border: 5px solid #04003b; border-radius: 12px; }
-        
+        .crawl td { padding:16px; border-bottom:1px solid #222; font-size:1.3rem; }
+        .crawl .rank { font-size:1rem; color:#9e9d9d; width:40px; }
+        .crawl .team { display:block; font-size:0.9rem; color:#9e9d9d; }
+        .crawl .val { text-align:right; color:#9e9d9d; }
+        .chart-box { background:#050505; border:3px solid #04003b; padding:20px; border-radius: 8px; min-height:0; }
+        .side { display:flex; flex-direction:column; gap:20px; min-height:0; }
+        .qr-box { background:white; padding:20px; color:black; text-align:center; border: 5px solid #04003b; border-radius: 12px; }
+        .qr-box #qrcode img { margin:0 auto; }
+        .teams-box { background:rgba(255,255,255,0.05); border:3px solid #04003b; border-radius:8px; overflow:hidden; flex-grow:1; }
+        .teams-box table { width:100%; border-collapse:collapse; }
+        .teams-box td { padding:10px 14px; border-bottom:1px solid #222; font-size:1.2rem; }
+        .teams-box .dim { color:#9e9d9d; font-size:0.95rem; }
+        .empty { color:#555; padding:20px; text-align:center; font-size:1.1rem; }
+
         .footer-ticker { position: absolute; bottom: 0; left: 0; width: 100%; background: #0b3562; border-top: 4px solid #9e9d9d; padding: 15px 0; overflow: hidden; white-space: nowrap; }
         .ticker-text { display: inline-block; padding-left: 100%; animation: ticker 30s linear infinite; font-size: 1.8rem; color: #ffffff; font-weight: bold; }
         @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
@@ -27,46 +38,59 @@
     <div class="header"><h1>HAWKCHAIN LIVE</h1><h1 id="clock"></h1></div>
     <div class="main">
         <div class="scroll-box">
-            <div class="table-header"><span>TEAM</span><span>TALONS</span></div>
+            <div class="table-header"><span>TRADER</span><span>TALONS</span></div>
             <div class="crawl-container">
                 <div class="crawl">
                     <table style="width:100%; border-collapse:collapse;">
-                        {% for row in wallets %}
+                        {% for p in people[:50] %}
                         <tr>
-                            <td style="padding:18px; border-bottom:1px solid #222; font-size:1rem; color:#9e9d9d; width:40px;">#{{ loop.index }}</td>
-                            <td style="padding:18px; border-bottom:1px solid #222; font-size:1.5rem;">{{ row[0] }}</td>
-                            <td style="text-align:right; padding:18px; font-size:1.5rem; color:#9e9d9d;">{{ "%.2f"|format(row[1] * price) }}</td>
+                            <td class="rank">#{{ p.rank }}</td>
+                            <td>{{ p.name }}<span class="team">Team {{ p.team }}</span></td>
+                            <td class="val">{{ "%.2f"|format(p.value) }}</td>
                         </tr>
                         {% endfor %}
                     </table>
+                    {% if not people %}<div class="empty">Scan the QR code to become the first trader</div>{% endif %}
                 </div>
             </div>
         </div>
         <div class="chart-box"><canvas id="priceChart"></canvas></div>
-        <div class="qr-box"><div id="qrcode"></div><p style="margin-top:20px; font-size:1.5rem; font-weight:bold;">SCAN TO INVEST</p></div>
+        <div class="side">
+            <div class="qr-box"><div id="qrcode"></div><p style="margin:15px 0 0; font-size:1.4rem; font-weight:bold;">SCAN TO INVEST</p></div>
+            <div class="teams-box">
+                <div class="table-header" style="font-size:1.1rem; padding:14px;"><span>TOP TEAMS</span><span>AVG</span></div>
+                <table>
+                    {% for t in teams[:6] %}
+                    <tr><td class="dim">#{{ t.rank }}</td><td>{{ t.team }} <span class="dim">({{ t.members }})</span></td><td style="text-align:right;">{{ "%.1f"|format(t.avg) }}</td></tr>
+                    {% endfor %}
+                </table>
+                {% if not teams %}<div class="empty">No teams yet</div>{% endif %}
+            </div>
+        </div>
     </div>
-    
+
     <div class="footer-ticker">
         <div class="ticker-text">
-            FRC 8726 CryptoHawks | Urbana High School | Market Rate: 1 HB = {{ "%.2f"|format(price) }} Talons | Let's Go Hawks!
+            FRC 8726 CryptoHawks | Urbana High School | Market Rate: 1 HB = {{ "%.2f"|format(price) }} Talons | {{ people|length }} traders from {{ teams|length }} teams | Let's Go Hawks!
         </div>
     </div>
 
     <script>
-        new QRCode(document.getElementById("qrcode"), { text: "https://crypto.frc8726.org", width: 230, height: 230, colorDark: "#000000", colorLight: "#ffffff" });
+        new QRCode(document.getElementById("qrcode"), { text: "https://crypto.frc8726.org", width: 210, height: 210, colorDark: "#000000", colorLight: "#ffffff" });
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
         new Chart(document.getElementById('priceChart'), {
             type: 'line',
             data: { labels: {{ graph_labels|tojson }}, datasets: [{ label: 'Price', data: {{ graph_data|tojson }}, borderColor: '#9e9d9d', fill: true, backgroundColor: 'rgba(4,0,59,0.5)', pointBackgroundColor: '#ffffff', pointRadius: 5 }] },
-            options: { 
-                responsive:true, 
+            options: {
+                responsive:true,
                 maintainAspectRatio:false,
+                animation:false,
                 plugins: {
-                    title: { display: true, text: 'Market Value: CryptoHawks', color: '#ffffff', font: { size: 32, family: 'Montserrat' }, padding: { bottom: 25 } },
+                    title: { display: true, text: {{ ("Market Value: " ~ stock_name ~ " (" ~ team_label ~ ")")|tojson }}, color: '#ffffff', font: { size: 32, family: 'Montserrat' }, padding: { bottom: 25 } },
                     legend: { display: false }
                 },
                 scales: {
-                    x: { title: { display: true, text: 'Match Number', color: '#9e9d9d', font: { size: 18 } }, ticks: { color: '#c0c0c0', font: { size: 16 } }, grid: { color: '#1a1a1a' } },
+                    x: { title: { display: true, text: 'Qualification Match', color: '#9e9d9d', font: { size: 18 } }, ticks: { color: '#c0c0c0', font: { size: 16 } }, grid: { color: '#1a1a1a' } },
                     y: { title: { display: true, text: 'Talon Price', color: '#9e9d9d', font: { size: 18 } }, ticks: { color: '#c0c0c0', font: { size: 16 } }, grid: { color: '#1a1a1a' } }
                 }
             }

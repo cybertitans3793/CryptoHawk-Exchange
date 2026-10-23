@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="120">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>8726 | Rankings</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
@@ -11,30 +11,72 @@
         .card { background:#04003b; padding:20px; border-radius:8px; margin-bottom:20px; border:2px solid #9e9d9d; text-align: center; }
         .live-price { font-size: 1.5rem; color: #ffffff; }
         .sub-text { color: #9e9d9d; font-size: 0.9rem; margin-top: 5px; text-transform: uppercase; }
+        .tabs { display:flex; gap:10px; margin-bottom:15px; }
+        .tabs a { flex:1; text-align:center; padding:12px; border:2px solid #9e9d9d; border-radius:6px; color:#9e9d9d; text-decoration:none; font-size:0.9rem; text-transform:uppercase; }
+        .tabs a.active { background:#04003b; color:#fff; }
+        .board { display:none; } .board:target, .board.default { display:block; }
+        .board:target ~ .board.default { display:none; }
+        h2 { font-size:1rem; color:#9e9d9d; text-transform:uppercase; letter-spacing:1px; text-align:center; margin:10px 0 12px; }
         table { width:100%; border-collapse:collapse; background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; }
-        th { background: #04003b; color: #9e9d9d; padding: 15px 10px; font-size: 0.9rem; text-align: center; }
-        td { padding:15px 10px; border-bottom:1px solid #222; text-align:center; font-size: 1rem; }
+        th { background: #04003b; color: #9e9d9d; padding: 12px 8px; font-size: 0.8rem; text-align: center; }
+        td { padding:12px 8px; border-bottom:1px solid #222; text-align:center; font-size: 0.95rem; }
         .val-col { color: #c0c0c0; font-weight: bold; }
-        .hb-col { color: #9e9d9d; font-size: 0.9rem; }
+        .dim { color: #9e9d9d; font-size: 0.85rem; }
+        tr.mine td { background: rgba(158,157,157,0.25); }
+        .empty { text-align:center; color:#555; padding:20px; }
+        .back { color:#9e9d9d; display:block; text-align:center; margin-top:20px; font-size:0.9rem; text-decoration:none; padding:10px; }
     </style>
 </head>
 <body>
     <div class="card">
         <div class="live-price">1 HB = {{ "%.2f"|format(price) }} Talons</div>
-        <div class="sub-text">Live Market Value</div>
+        <div class="sub-text">{{ stock_name }} Live Market Value{% if not online %} · data delayed{% endif %}</div>
     </div>
-    <table>
-        <thead><tr><th>#</th><th>TEAM</th><th>HAWKBITS</th><th>TALONS</th></tr></thead>
-        <tbody>
-            {% for row in wallets %}
-            <tr>
-                <td style="color:#9e9d9d; font-size:0.85rem;">{{ loop.index }}</td>
-                <td>{{ row[0] }}</td>
-                <td class="hb-col">{{ "%.2f"|format(row[1]) }}</td>
-                <td class="val-col">{{ "%.2f"|format(row[1] * price) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <div class="tabs">
+        <a href="#traders">Traders</a>
+        <a href="#teams">Teams</a>
+    </div>
+
+    <div class="board" id="teams">
+        <h2>Team Rankings · by average net worth</h2>
+        {% if teams %}
+        <table>
+            <thead><tr><th>#</th><th>TEAM</th><th>TRADERS</th><th>AVG</th><th>TOTAL</th></tr></thead>
+            <tbody>
+                {% for t in teams %}
+                <tr class="{{ 'mine' if t.team == my_team }}">
+                    <td class="dim">{{ t.rank }}</td>
+                    <td>{{ t.team }}</td>
+                    <td class="dim">{{ t.members }}</td>
+                    <td class="val-col">{{ "%.1f"|format(t.avg) }}</td>
+                    <td class="dim">{{ "%.0f"|format(t.total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<div class="empty">No teams yet.</div>{% endif %}
+    </div>
+
+    <div class="board default" id="traders">
+        <h2>Trader Rankings · net worth in Talons</h2>
+        {% if people %}
+        <table>
+            <thead><tr><th>#</th><th>TRADER</th><th>TEAM</th><th>TALONS</th></tr></thead>
+            <tbody>
+                {% for p in people[:100] %}
+                <tr class="{{ 'mine' if p.name == my_name }}">
+                    <td class="dim">{{ p.rank }}</td>
+                    <td>{{ p.name }}</td>
+                    <td class="dim">{{ p.team }}</td>
+                    <td class="val-col">{{ "%.2f"|format(p.value) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<div class="empty">No traders yet — be the first.</div>{% endif %}
+    </div>
+
+    <a href="{{ '/me' if my_name else '/' }}" class="back">{{ 'My Account' if my_name else 'Start Trading' }} →</a>
 </body>
 </html>
