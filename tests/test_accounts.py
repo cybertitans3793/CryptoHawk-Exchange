@@ -75,10 +75,10 @@ def test_pick_name_uses_suffix_once_list_is_used_up(client):
     conn.close()
 
 
-def test_team_leaderboard_ranks_by_average_not_total(client, event):
-    # 1629 farms 5 accounts; 346 has one big trader. Average must win, so farming doesn't help a team.
+def test_team_leaderboard_ranks_by_average_not_total(client):
+    # Team 1111 has 5 small accounts; 2222 has one big trader. Ranking uses the average, so headcount alone doesn't win.
     conn = main.get_db()
-    rows = [("1629", 10)] * 5 + [("346", 20)]
+    rows = [("1111", 10)] * 5 + [("2222", 20)]
     for i, (team, hb) in enumerate(rows):
         conn.execute(
             "INSERT INTO accounts (token, name, team_number, hb, buy_price, created) VALUES (?, ?, ?, ?, 1, ?)",
@@ -87,7 +87,7 @@ def test_team_leaderboard_ranks_by_average_not_total(client, event):
     conn.commit()
     conn.close()
     people, teams = main.leaderboards(price=2.0)
-    assert [t["team"] for t in teams] == ["346", "1629"]
+    assert [t["team"] for t in teams] == ["2222", "1111"]
     assert teams[1]["members"] == 5 and teams[1]["total"] == 100 and teams[1]["avg"] == 20
     assert people[0]["name"] == "N5" and people[0]["value"] == 40
 

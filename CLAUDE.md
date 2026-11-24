@@ -14,4 +14,4 @@
 - Deploy flow: commit here → `git push pimedia <branch>` → on pimedia, merge into main → restart. Ask before deploying or pushing to GitHub.
 
 ## V2
-Design notes are private, outside this public repo: `~/frc/cryptohawk-v2-handoff.md`. Read it before any V2 work. Don't copy anti-cheat details into this repo, the UI, or commit messages.
+Design notes are kept outside this public repo: `~/frc/cryptohawk-v2-handoff.md`. Read it before any V2 work. Keep game-balance details out of this repo, the UI, and commit messages.
