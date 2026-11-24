@@ -7,17 +7,17 @@ import time
 from contextlib import asynccontextmanager
 
 import requests
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.templating import Jinja2Templates
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "hawkchain.db"))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
 # CONFIG — all sensitive values come from .env
-TEAM_KEY = os.environ.get("TEAM_KEY", "frc8726")          # the team whose stock is traded
+TEAM_KEY = os.environ.get("TEAM_KEY", "frc8726")  # the team whose stock is traded
 STOCK_NAME = os.environ.get("STOCK_NAME", "CryptoHawks")
 EVENT_KEY = os.environ.get("EVENT_KEY", "2026mdpas")
 TBA_API_KEY = os.environ.get("TBA_API_KEY", "")
@@ -34,6 +34,7 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 TBA = requests.Session()
 TBA.headers.update({"X-TBA-Auth-Key": TBA_API_KEY, "User-Agent": "CryptoHawk-Exchange"})
 
+# fmt: off
 STEM_NAMES = [
     "Curie", "Tesla", "Lovelace", "Turing", "Hopper", "Newton", "Einstein", "Noether",
     "Ramanujan", "Feynman", "Franklin", "Katherine Johnson", "Darwin", "Galileo", "Kepler",
@@ -49,6 +50,7 @@ STEM_NAMES = [
     "Mary Jackson", "Ochoa", "Tharp", "Nightingale", "Watt", "Bell", "Morse", "Diesel",
     "Kamen", "Woodie Flowers", "Lister", "Yalow", "Tu Youyou",
 ]
+# fmt: on
 ROMAN = ["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
 
 
@@ -88,8 +90,10 @@ def get_setting(key, default=None):
 
 def set_setting(key, value):
     conn = get_db()
-    conn.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                 (key, str(value)))
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (key, str(value)),
+    )
     conn.commit()
     conn.close()
 
@@ -114,14 +118,20 @@ def _fetch_market():
             scored.append((m["match_number"], side["rp"]))
     total = len(scored)
     if REPLAY_MODE:
-        scored = scored[:int(get_setting("replay_n", 0))]
+        scored = scored[: int(get_setting("replay_n", 0))]
     price, history, labels = 1.0, [1.0], ["Start"]
     for match_number, rp in scored:
         price *= 0.9 + 0.1 * min(max(rp, 0), 6)
         history.append(round(price, 2))
         labels.append(f"Q{match_number}")
-    return {"price": round(max(price, 0.1), 2), "history": history, "labels": labels,
-            "scored": len(scored), "total_scored": total, "online": True}
+    return {
+        "price": round(max(price, 0.1), 2),
+        "history": history,
+        "labels": labels,
+        "scored": len(scored),
+        "total_scored": total,
+        "online": True,
+    }
 
 
 def get_market(force=False):
@@ -160,6 +170,7 @@ def get_event_teams():
 
 # --- ACCOUNTS / LEADERBOARDS ---
 
+
 def pick_name(conn):
     used = {r["name"] for r in conn.execute("SELECT name FROM accounts")}
     free = [n for n in STEM_NAMES if n not in used]
@@ -184,24 +195,48 @@ def current_account(request: Request):
 
 def leaderboards(price):
     conn = get_db()
-    people = conn.execute("SELECT name, team_number, hb, buy_price FROM accounts ORDER BY hb DESC, created ASC").fetchall()
+    people = conn.execute(
+        "SELECT name, team_number, hb, buy_price FROM accounts ORDER BY hb DESC, created ASC"
+    ).fetchall()
     teams = conn.execute("""SELECT team_number, COUNT(*) AS members, SUM(hb) AS total_hb, AVG(hb) AS avg_hb
                             FROM accounts GROUP BY team_number
                             ORDER BY avg_hb DESC, members DESC""").fetchall()
     conn.close()
-    people = [{"rank": i + 1, "name": p["name"], "team": p["team_number"], "hb": p["hb"],
-               "value": p["hb"] * price, "buy_price": p["buy_price"]} for i, p in enumerate(people)]
-    teams = [{"rank": i + 1, "team": t["team_number"], "members": t["members"],
-              "avg": t["avg_hb"] * price, "total": t["total_hb"] * price} for i, t in enumerate(teams)]
+    people = [
+        {
+            "rank": i + 1,
+            "name": p["name"],
+            "team": p["team_number"],
+            "hb": p["hb"],
+            "value": p["hb"] * price,
+            "buy_price": p["buy_price"],
+        }
+        for i, p in enumerate(people)
+    ]
+    teams = [
+        {
+            "rank": i + 1,
+            "team": t["team_number"],
+            "members": t["members"],
+            "avg": t["avg_hb"] * price,
+            "total": t["total_hb"] * price,
+        }
+        for i, t in enumerate(teams)
+    ]
     return people, teams
 
 
 def market_context(market):
-    return {"price": market["price"] if market else 1.0, "online": bool(market and market["online"]),
-            "stock_name": STOCK_NAME, "team_label": TEAM_KEY.replace("frc", "")}
+    return {
+        "price": market["price"] if market else 1.0,
+        "online": bool(market and market["online"]),
+        "stock_name": STOCK_NAME,
+        "team_label": TEAM_KEY.replace("frc", ""),
+    }
 
 
 # --- PUBLIC PAGES ---
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, error: str = ""):
@@ -232,8 +267,10 @@ def do_claim(request: Request, team_num: str = Form(...)):
     conn = get_db()
     for _ in range(5):
         try:
-            conn.execute("INSERT INTO accounts (token, name, team_number, hb, buy_price, created) VALUES (?, ?, ?, ?, ?, ?)",
-                         (token, pick_name(conn), team_num, round(INVEST_TALONS / price, 4), price, int(time.time())))
+            conn.execute(
+                "INSERT INTO accounts (token, name, team_number, hb, buy_price, created) VALUES (?, ?, ?, ?, ?, ?)",
+                (token, pick_name(conn), team_num, round(INVEST_TALONS / price, 4), price, int(time.time())),
+            )
             conn.commit()
             break
         except sqlite3.IntegrityError:
@@ -254,8 +291,16 @@ def my_account(request: Request, new: int = 0):
     people, teams = leaderboards(ctx["price"])
     me = next(p for p in people if p["name"] == acct["name"])
     my_team = next(t for t in teams if t["team"] == acct["team_number"])
-    ctx.update({"me": me, "my_team": my_team, "people_count": len(people), "team_count": len(teams),
-                "new": bool(new), "invest": INVEST_TALONS})
+    ctx.update(
+        {
+            "me": me,
+            "my_team": my_team,
+            "people_count": len(people),
+            "team_count": len(teams),
+            "new": bool(new),
+            "invest": INVEST_TALONS,
+        }
+    )
     return templates.TemplateResponse(request, "me.html", context=ctx)
 
 
@@ -264,8 +309,14 @@ def rankings(request: Request):
     ctx = market_context(get_market())
     people, teams = leaderboards(ctx["price"])
     acct = current_account(request)
-    ctx.update({"people": people, "teams": teams, "my_name": acct["name"] if acct else None,
-                "my_team": acct["team_number"] if acct else None})
+    ctx.update(
+        {
+            "people": people,
+            "teams": teams,
+            "my_name": acct["name"] if acct else None,
+            "my_team": acct["team_number"] if acct else None,
+        }
+    )
     return templates.TemplateResponse(request, "tv.html", context=ctx)
 
 
@@ -274,9 +325,14 @@ def pit_display(request: Request):
     market = get_market()
     ctx = market_context(market)
     people, teams = leaderboards(ctx["price"])
-    ctx.update({"people": people, "teams": teams,
-                "graph_data": market["history"] if market else [1.0],
-                "graph_labels": market["labels"] if market else ["Start"]})
+    ctx.update(
+        {
+            "people": people,
+            "teams": teams,
+            "graph_data": market["history"] if market else [1.0],
+            "graph_labels": market["labels"] if market else ["Start"],
+        }
+    )
     return templates.TemplateResponse(request, "display.html", context=ctx)
 
 
@@ -286,9 +342,9 @@ security = HTTPBasic()
 
 def verify_credentials(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
     valid = (
-        bool(ADMIN_USER and ADMIN_PASS) and
-        secrets.compare_digest(credentials.username, ADMIN_USER) and
-        secrets.compare_digest(credentials.password, ADMIN_PASS)
+        bool(ADMIN_USER and ADMIN_PASS)
+        and secrets.compare_digest(credentials.username, ADMIN_USER)
+        and secrets.compare_digest(credentials.password, ADMIN_PASS)
     )
     if not valid:
         raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
@@ -308,8 +364,9 @@ def admin_page(request: Request, msg: str = "", username: str = Depends(verify_c
     market = get_market()
     ctx = market_context(market)
     people, teams = leaderboards(ctx["price"])
-    ctx.update({"people": people, "teams": teams, "msg": msg, "event_key": EVENT_KEY,
-                "replay": REPLAY_MODE, "market": market})
+    ctx.update(
+        {"people": people, "teams": teams, "msg": msg, "event_key": EVENT_KEY, "replay": REPLAY_MODE, "market": market}
+    )
     return templates.TemplateResponse(request, "admin.html", context=ctx)
 
 

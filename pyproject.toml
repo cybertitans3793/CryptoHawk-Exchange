@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+extend-exclude = [".venv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:warnings"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "E501"]  # Depends()/Form() defaults are the FastAPI idiom; formatter owns line length
