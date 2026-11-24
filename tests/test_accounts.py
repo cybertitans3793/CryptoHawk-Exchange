@@ -135,3 +135,62 @@ def test_replay_steps_and_resets(client, tba, monkeypatch):
     assert main.get_market()["price"] == 1.65
     client.post("/admin/replay", data={"action": "reset"}, auth=AUTH)
     assert main.get_market()["price"] == 1.0
+
+
+# --- TBA webhook ---
+import hashlib  # noqa: E402
+import hmac  # noqa: E402
+import json  # noqa: E402
+
+SECRET = "hook-secret"
+
+
+def post_hook(client, msg, secret=SECRET):
+    body = json.dumps(msg).encode()
+    sig = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return client.post("/tba/webhook", content=body, headers={"X-TBA-HMAC": sig, "Content-Type": "application/json"})
+
+
+@pytest.fixture
+def hook(monkeypatch):
+    monkeypatch.setattr(main, "TBA_WEBHOOK_SECRET", SECRET)
+
+
+def test_webhook_disabled_without_secret(client):
+    assert post_hook(client, {"message_type": "ping"}).status_code == 404
+
+
+def test_webhook_rejects_bad_signature(client, hook):
+    assert post_hook(client, {"message_type": "ping"}, secret="wrong").status_code == 401
+    assert client.post("/tba/webhook", content=b"{}").status_code == 401
+
+
+def test_webhook_ping_ok(client, hook):
+    r = post_hook(client, {"message_type": "ping", "message_data": {"title": "Test Message", "desc": "x"}})
+    assert r.status_code == 200
+
+
+def test_webhook_verification_code_shown_on_admin(client, hook, event):
+    post_hook(client, {"message_type": "verification", "message_data": {"verification_key": "abc123"}})
+    assert main.get_setting("tba_verification_key") == "abc123"
+    assert "abc123" in client.get("/admin", auth=AUTH).text
+
+
+def test_match_score_for_our_event_refreshes_price(client, hook, event, monkeypatch):
+    monkeypatch.setattr(main, "EVENT_KEY", "2026test")
+    assert main.get_market()["price"] == 1.5
+    event.matches = [qm(1, 6), qm(2, 6)]
+    assert main.get_market()["price"] == 1.5  # still cached
+    post_hook(
+        client, {"message_type": "match_score", "message_data": {"event_key": "2026test", "match_key": "2026test_qm2"}}
+    )
+    assert main.get_market()["price"] == 2.25
+
+
+def test_match_score_for_other_event_ignored(client, hook, event, monkeypatch):
+    monkeypatch.setattr(main, "EVENT_KEY", "2026test")
+    main.get_market()
+    calls = event.calls
+    post_hook(client, {"message_type": "match_score", "message_data": {"event_key": "2026other"}})
+    main.get_market()
+    assert event.calls == calls

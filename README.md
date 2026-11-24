@@ -12,7 +12,11 @@ FastAPI app for FRC Team 8726's competition "stock market" — team stock price 
 
 ### Config (.env)
 
-`TBA_API_KEY`, `EVENT_KEY`, `ADMIN_USER`, `ADMIN_PASS` (required — admin is disabled if unset), optional `TEAM_KEY`, `STOCK_NAME`, `DB_PATH`.
+`TBA_API_KEY`, `EVENT_KEY`, `ADMIN_USER`, `ADMIN_PASS` (required — admin is disabled if unset), optional `TEAM_KEY`, `STOCK_NAME`, `DB_PATH`, `TBA_WEBHOOK_SECRET`.
+
+### TBA webhook (optional, faster price updates)
+
+Set `TBA_WEBHOOK_SECRET`, then on thebluealliance.com → Account → add a webhook with URL `https://<your site>/tba/webhook` and the same secret. TBA sends a verification code, which shows on `/admin`; enter it on the TBA account page. Subscribe the webhook to the event's match scores (myTBA). Each `match_score` for `EVENT_KEY` triggers an immediate price refresh.
 
 ### Replay mode (testing / demos)
 

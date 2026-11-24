@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import json
 import os
 import random
 import secrets
@@ -21,6 +24,8 @@ TEAM_KEY = os.environ.get("TEAM_KEY", "frc8726")  # the team whose stock is trad
 STOCK_NAME = os.environ.get("STOCK_NAME", "CryptoHawks")
 EVENT_KEY = os.environ.get("EVENT_KEY", "2026mdpas")
 TBA_API_KEY = os.environ.get("TBA_API_KEY", "")
+# Secret shared with the TBA webhook (myTBA account page). Unset = webhook endpoint disabled.
+TBA_WEBHOOK_SECRET = os.environ.get("TBA_WEBHOOK_SECRET", "")
 ADMIN_USER = os.environ.get("ADMIN_USER", "")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "")
 # Replay mode: price only counts the first N scored matches; admin steps N forward.
@@ -101,6 +106,10 @@ def set_setting(key, value):
 # --- MARKET DATA ---
 # Price compounds per scored qual match: 0 RP = -10%, each RP adds +10% (6 RP = +50%).
 CACHE_TTL = 60
+# After a TBA match_score webhook, refetch quickly for a while: TBA's own API responses may
+# still be cached for a short time after the webhook fires.
+FAST_TTL = 10
+FAST_WINDOW = 120
 _market_lock = threading.Lock()
 _market = {"result": None, "ts": 0.0, "ok_ts": 0.0}
 
@@ -137,7 +146,8 @@ def _fetch_market():
 def get_market(force=False):
     with _market_lock:
         now = time.time()
-        if not force and _market["result"] and now - _market["ts"] < CACHE_TTL:
+        ttl = FAST_TTL if now < _market.get("fast_until", 0) else CACHE_TTL
+        if not force and _market["result"] and now - _market["ts"] < ttl:
             return _market["result"]
         try:
             _market["result"] = _fetch_market()
@@ -336,6 +346,40 @@ def pit_display(request: Request):
     return templates.TemplateResponse(request, "display.html", context=ctx)
 
 
+# --- TBA WEBHOOK ---
+# Registered on TBA's account page with URL https://<site>/tba/webhook and TBA_WEBHOOK_SECRET.
+# TBA signs each POST: X-TBA-HMAC = hex HMAC-SHA256(secret, raw body).
+
+
+def mark_market_stale():
+    with _market_lock:
+        _market["ts"] = 0.0
+        _market["fast_until"] = time.time() + FAST_WINDOW
+
+
+@app.post("/tba/webhook")
+async def tba_webhook(request: Request):
+    if not TBA_WEBHOOK_SECRET:
+        raise HTTPException(status_code=404)
+    body = await request.body()
+    expected = hmac.new(TBA_WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, request.headers.get("X-TBA-HMAC", "")):
+        raise HTTPException(status_code=401, detail="Bad signature")
+    try:
+        msg = json.loads(body)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Bad JSON") from None
+    kind = msg.get("message_type")
+    data = msg.get("message_data") or {}
+    if kind == "verification":
+        # Enter this code on TBA's account page to activate the webhook
+        set_setting("tba_verification_key", data.get("verification_key", ""))
+        print(f"TBA webhook verification key: {data.get('verification_key')}")
+    elif kind == "match_score" and data.get("event_key") == EVENT_KEY:
+        mark_market_stale()
+    return {"ok": True}
+
+
 # --- ADMIN ---
 security = HTTPBasic()
 
@@ -365,7 +409,15 @@ def admin_page(request: Request, msg: str = "", username: str = Depends(verify_c
     ctx = market_context(market)
     people, teams = leaderboards(ctx["price"])
     ctx.update(
-        {"people": people, "teams": teams, "msg": msg, "event_key": EVENT_KEY, "replay": REPLAY_MODE, "market": market}
+        {
+            "people": people,
+            "teams": teams,
+            "msg": msg,
+            "event_key": EVENT_KEY,
+            "replay": REPLAY_MODE,
+            "market": market,
+            "tba_verification_key": get_setting("tba_verification_key") if TBA_WEBHOOK_SECRET else None,
+        }
     )
     return templates.TemplateResponse(request, "admin.html", context=ctx)
 

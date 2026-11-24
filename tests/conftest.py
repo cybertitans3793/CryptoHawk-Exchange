@@ -89,6 +89,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "REPLAY_MODE", False)
     monkeypatch.setattr(main, "ADMIN_USER", "admin")
     monkeypatch.setattr(main, "ADMIN_PASS", "test-pass")
+    monkeypatch.setattr(main, "TBA_WEBHOOK_SECRET", "")
 
 
 @pytest.fixture

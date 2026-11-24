@@ -49,6 +49,7 @@
         SCORED MATCHES: {{ market.scored if market else 0 }}{% if replay %} / {{ market.total_scored if market else 0 }}{% endif %}
     </div>
     {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+    {% if tba_verification_key %}<div class="msg">TBA webhook verification code: <code>{{ tba_verification_key }}</code></div>{% endif %}
 
     {% if replay %}
     <div class="panel" style="border-color: var(--urbana-grey);">
